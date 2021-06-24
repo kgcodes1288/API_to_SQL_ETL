@@ -1,0 +1,40 @@
+Provide query/analysis to give biggest earthquake of 2017
+
+		SELECT * FROM 
+                    (SELECT EVENTS_MASTER.*, DESCRIPTION.*,
+                    DATETIME_TEXT.* ,
+                    RANK () OVER (
+                                ORDER BY MAGNITUDE DESC ) MYRANK
+                    FROM EVENTS_MASTER, DESCRIPTION, DATETIME_TEXT
+                    WHERE EVENTS_MASTER.EVENT_ID = DESCRIPTION.ID
+                    AND DESCRIPTION.ID = DATETIME_TEXT.ID
+                    AND lower(DESCRIPTION.EVENT_TYPE) = 'earthquake'
+		 ) TEMP
+                WHERE TEMP.MYRANK = 1
+
+Provide query/analysis to give most probable hour of the day for the earthquakes bucketed
+by the range of magnitude (0-1,1-2,2-3,3-4,4-5,5-6,>6
+For border values in the bucket, include them in the bucket where the value is a lower limit so for 1 include it in 1-2 bucket)
+
+		SELECT MAG_BUCKET,EVENT_HOUR
+                    FROM
+                        (SELECT  MAG_BUCKET,EVENT_HOUR,
+                        RANK() OVER (PARTITION BY MAG_BUCKET
+                                    ORDER BY EVENT_COUNT DESC ) MYRANK
+                        FROM
+                            (SELECT CASE 
+                                WHEN MAGNITUDE >= 0 AND MAGNITUDE < 1 THEN "0-1"
+                                WHEN MAGNITUDE >= 1 AND MAGNITUDE < 2 THEN "1-2"
+                                WHEN MAGNITUDE >= 2 AND MAGNITUDE < 3 THEN "2-3"
+                                WHEN MAGNITUDE >= 3 AND MAGNITUDE < 4 THEN "3-4"
+                                WHEN MAGNITUDE >= 4 AND MAGNITUDE < 5 THEN "4-5"
+                                WHEN MAGNITUDE >= 5 AND MAGNITUDE < 6 THEN "5-6"
+                                WHEN MAGNITUDE >= 6 THEN ">6"
+                                END AS MAG_BUCKET,
+                            DATETIME_TEXT.EVENT_HOUR, COUNT(DISTINCT EVENT_ID) AS EVENT_COUNT 
+                            FROM EVENTS_MASTER, DATETIME_TEXT
+                            WHERE EVENTS_MASTER.EVENT_ID = DATETIME_TEXT.ID
+                            GROUP BY MAG_BUCKET, EVENT_HOUR) TEMP
+                        ) TEMP2
+                    WHERE TEMP2.MYRANK = 1
+                    ORDER BY MAG_BUCKET
