@@ -36,7 +36,7 @@ else: #monthly batch update
         month = '0' + str(month_needed)
     else:
         month = str(month_needed)
-    url = r'https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime={0}-{1}-01&endtime={0}-{1}-31'.format(str(year),month)
+    url = r'https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime={0}-{1}-01&endtime={0}-{1}-31'.format(str(current_year),month)
     response = requests.get(url)
     data = response.json()
     events = pd.DataFrame(data['features'])
